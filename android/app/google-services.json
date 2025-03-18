@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "766389898218",
+    "project_id": "brokecheck-d0f86",
+    "storage_bucket": "brokecheck-d0f86.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:766389898218:android:887e1e7c07d8d97b7d8093",
+        "android_client_info": {
+          "package_name": "com.example.brokecheck"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCWvOjw-11dgH3Ey-AXVI8Jw9zWYB5eYnc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
