@@ -24,10 +24,42 @@ class _OpendcashbookState extends State<Opendcashbook> {
   // Stream to get transactions for this cashbook
   Stream<QuerySnapshot> get _transactionsStream {
     return _firestore
-        .collection('transactions')
-        .where('cashbookId', isEqualTo: widget.cashbook.id)
-        .orderBy('timestamp', descending: true)
+        // .collection('transactions')
+        // .where("cashbookId", isEqualTo: widget.cashbook.id)
+        // // .orderBy('timestamp', descending: true)
+        // .snapshots();
+        .collection('Entries') //?Try this
+        .where("CashbookID", isEqualTo: widget.cashbook.id)
+        // .orderBy('timestamp', descending: true)
         .snapshots();
+  }
+
+  Future<Map<String, double>> getCategoryWiseSpending() async {
+    QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+        .collection('Entries') //! Maybe BS
+        .where("CashbookID", isEqualTo: widget.cashbook.id)
+        .where("type", isEqualTo: "withdrawal") // Only withdrawals
+        .get();
+
+    Map<String, double> categorySpending = {};
+
+    for (var doc in querySnapshot.docs) {
+      Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+
+      String category = data['Category'] ?? 'Uncategorized';
+      double amount = (data['Amount'] is int)
+          ? (data['Amount'] as int).toDouble()
+          : (data['Amount'] ?? 0.0);
+
+      // Accumulate spending per category
+      categorySpending[category] = (categorySpending[category] ?? 0.0) + amount;
+    }
+
+    // Sort the map by values in descending order
+    var sortedEntries = categorySpending.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    return Map.fromEntries(sortedEntries); // Convert back to a Map
   }
 
   @override
@@ -62,7 +94,11 @@ class _OpendcashbookState extends State<Opendcashbook> {
             onPressed: () {
               // Toggle favorite status
               final CashbookService cashbookService = CashbookService();
-              cashbookService.toggleFavorite(widget.cashbook);
+              setState(() {
+                //* To change state for the Favorite toggle
+                cashbookService.toggleFavorite(widget.cashbook);
+                widget.cashbook.isFavorite = !widget.cashbook.isFavorite;
+              });
             },
           ),
           IconButton(
@@ -101,123 +137,14 @@ class _OpendcashbookState extends State<Opendcashbook> {
                   child: Column(
                     children: [
                       // Balance card
-                      Container(
-                        width: double.infinity,
-                        margin: EdgeInsets.symmetric(
-                          horizontal: isSmallScreen ? 8 : 16,
-                          vertical: isSmallScreen ? 8 : 16,
-                        ),
-                        padding: EdgeInsets.all(isSmallScreen ? 12 : 16),
-                        decoration: BoxDecoration(
-                          gradient: AppThemes.getPrimaryGradient(isDarkMode),
-                          borderRadius: BorderRadius.circular(15),
-                          boxShadow: [
-                            BoxShadow(
-                              color: primaryColor.withOpacity(0.2),
-                              blurRadius: 10,
-                              offset: const Offset(0, 5),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              "Current Balance",
-                              style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
-                                fontSize: isSmallScreen ? 14 : 16,
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              NumberFormat.currency(
-                                      locale: 'en_US',
-                                      symbol: '\$',
-                                      decimalDigits: 2)
-                                  .format(widget.cashbook.balance),
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: isSmallScreen ? 24 : 32,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-                            Row(
-                              children: [
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.remove, size: 16),
-                                    label: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        "Withdraw",
-                                        style: TextStyle(
-                                          fontSize: isSmallScreen ? 12 : 14,
-                                        ),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      _showTransactionDialog(context,
-                                          isDeposit: false);
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.white,
-                                      backgroundColor:
-                                          Colors.white.withOpacity(0.2),
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: isSmallScreen ? 8 : 12,
-                                      ),
-                                      side: const BorderSide(
-                                          color: Colors.white60),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: isSmallScreen ? 6 : 10),
-                                Expanded(
-                                  child: OutlinedButton.icon(
-                                    icon: const Icon(Icons.add, size: 16),
-                                    label: FittedBox(
-                                      fit: BoxFit.scaleDown,
-                                      child: Text(
-                                        "Deposit",
-                                        style: TextStyle(
-                                          fontSize: isSmallScreen ? 12 : 14,
-                                        ),
-                                      ),
-                                    ),
-                                    onPressed: () {
-                                      _showTransactionDialog(context,
-                                          isDeposit: true);
-                                    },
-                                    style: OutlinedButton.styleFrom(
-                                      foregroundColor: Colors.white,
-                                      backgroundColor:
-                                          Colors.white.withOpacity(0.2),
-                                      padding: EdgeInsets.symmetric(
-                                        vertical: isSmallScreen ? 8 : 12,
-                                      ),
-                                      side: const BorderSide(
-                                          color: Colors.white60),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
 
                       // Donut chart - adjust height based on screen size
-                      SizedBox(
-                        height: isSmallScreen ? 150 : 200,
-                        child: const DonutChart(),
+                      DonutChart(
+                        perc1: 10,
+                        perc2: 2,
+                        perc3: 8,
+                        perc4: 80,
+                        balance: widget.cashbook.balance,
                       ),
 
                       // Transactions list
@@ -272,7 +199,10 @@ class _OpendcashbookState extends State<Opendcashbook> {
                           }
 
                           if (!snapshot.hasData ||
-                              snapshot.data!.docs.isEmpty) {
+                              // ignore: unrelated_type_equality_checks
+                              snapshot.data!.docs.isEmpty ||
+                              snapshot.data == Null) {
+                            print(widget.cashbook.id);
                             return Center(
                               child: Padding(
                                 padding: const EdgeInsets.all(40.0),
@@ -311,50 +241,25 @@ class _OpendcashbookState extends State<Opendcashbook> {
 
                           // For demonstration, show sample entries
                           // In a real app, you'd map the snapshot.data!.docs to Entry widgets
-                          return ListView(
-                            physics: const NeverScrollableScrollPhysics(),
-                            shrinkWrap: true,
+                          final entries = snapshot.data!.docs;
+                          return ListView.builder(
                             padding: EdgeInsets.only(
                               bottom: isSmallScreen ? 60 : 80,
                               left: isSmallScreen ? 8 : 0,
                               right: isSmallScreen ? 8 : 0,
                             ),
-                            children: [
-                              Entry(
-                                amount: 40,
-                                title: "Salary",
-                                entryDate: DateTime.now(),
-                                entryTime: TimeOfDay.now(),
-                              ),
-                              Entry(
-                                amount: -6,
-                                title: "Coffee",
-                                entryDate: DateTime.now()
-                                    .subtract(const Duration(days: 1)),
-                                entryTime: TimeOfDay.now(),
-                              ),
-                              Entry(
-                                amount: 30,
-                                title: "Freelance work",
-                                entryDate: DateTime.now()
-                                    .subtract(const Duration(days: 2)),
-                                entryTime: TimeOfDay.now(),
-                              ),
-                              Entry(
-                                amount: -15,
-                                title: "Lunch",
-                                entryDate: DateTime.now()
-                                    .subtract(const Duration(days: 2)),
-                                entryTime: TimeOfDay.now(),
-                              ),
-                              Entry(
-                                amount: -25,
-                                title: "Books",
-                                entryDate: DateTime.now()
-                                    .subtract(const Duration(days: 3)),
-                                entryTime: TimeOfDay.now(),
-                              ),
-                            ],
+                            itemCount: entries.length,
+                            physics: const NeverScrollableScrollPhysics(),
+                            shrinkWrap: true,
+                            itemBuilder: (context, index) {
+                              final doc = snapshot.data!.docs[index];
+                              final data = doc.data() as Map<String, dynamic>;
+                              return Entry(
+                                  amount: (data['Amount'] as num).toDouble(),
+                                  title: widget.cashbook.id,
+                                  entryDate: DateTime.now(),
+                                  entryTime: TimeOfDay.now());
+                            },
                           );
                         },
                       ),
@@ -373,6 +278,83 @@ class _OpendcashbookState extends State<Opendcashbook> {
         },
         backgroundColor: primaryColor,
         child: const Icon(Icons.add),
+      ),
+      bottomNavigationBar: BottomAppBar(
+        child: Row(
+          children: [
+            Expanded(
+                child: ElevatedButton(
+                    onPressed: () async {
+                      // Create a non-null map with the required data
+                      Map<String, dynamic> cashbookData = {
+                        'id': widget.cashbook.id,
+                        'balance': widget.cashbook.balance,
+                        'debit': widget.cashbook.debit,
+                        'credit': widget.cashbook.credit,
+                      };
+
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/withdraw',
+                        arguments: cashbookData,
+                      );
+                      if (result is Map && result['result'] == true) {
+                        setState(() {
+                          widget.cashbook.balance = result['newBalance'];
+                        });
+                      }
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.remove,
+                          color: Colors.white,
+                        ),
+                        SizedBox(
+                          width: isSmallScreen ? 4 : 8,
+                        ),
+                        Text("Withdraw"),
+                      ],
+                    ))),
+            SizedBox(
+              width: isSmallScreen ? 4 : 8,
+            ),
+            Expanded(
+                child: ElevatedButton(
+                    onPressed: () async {
+                      // Create a non-null map with the required data
+                      Map<String, dynamic> cashbookData = {
+                        'id': widget.cashbook.id,
+                        'balance': widget.cashbook.balance,
+                      };
+
+                      final result = await Navigator.pushNamed(
+                        context,
+                        '/deposit',
+                        arguments: cashbookData,
+                      );
+                      if (result is Map && result['result'] == true) {
+                        setState(() {
+                          widget.cashbook.balance = result['newBalance'];
+                        });
+                      }
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add,
+                          color: Colors.white,
+                        ),
+                        SizedBox(
+                          width: isSmallScreen ? 4 : 8,
+                        ),
+                        Text("Deposit"),
+                      ],
+                    ))),
+          ],
+        ),
       ),
     );
   }
@@ -456,11 +438,17 @@ class _OpendcashbookState extends State<Opendcashbook> {
                         widget.cashbook.id, actualAmount);
 
                     // Add transaction record
-                    _firestore.collection('transactions').add({
-                      'cashbookId': widget.cashbook.id,
-                      'amount': actualAmount,
-                      'description': descriptionController.text,
-                      'timestamp': Timestamp.now(),
+                    // _firestore.collection('transactions').add({
+                    //   'cashbookId': widget.cashbook.id,
+                    //   'amount': actualAmount,
+                    //   'description': descriptionController.text,
+                    //   'timestamp': Timestamp.now(),
+                    // });
+                    _firestore.collection('Entries').add({
+                      'CashbookID': widget.cashbook.id, //?Try this
+                      'Total_Amount': actualAmount,
+                      'Description': descriptionController.text,
+                      'Creation_Date': Timestamp.now(),
                     });
 
                     Navigator.pop(context);

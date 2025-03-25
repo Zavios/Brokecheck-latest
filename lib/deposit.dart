@@ -95,23 +95,36 @@ class _DepositState extends State<Deposit> {
       );
 
       // Create transaction data
+      // final transactionData = {
+      //   'amount': amount,
+      //   'description': descriptionController.text,
+      //   'paymentMode': paymentModes[selectedPaymentIndex!],
+      //   'type': 'deposit',
+      //   'timestamp': Timestamp.fromDate(transactionDateTime),
+      //   'cashbookId': cashbookId,
+      // };
       final transactionData = {
-        'amount': amount,
-        'description': descriptionController.text,
-        'paymentMode': paymentModes[selectedPaymentIndex!],
+        //?Try this
+        'Amount': amount,
+        'Description': descriptionController.text,
+        'Payment_Mode': paymentModes[selectedPaymentIndex!],
         'type': 'deposit',
-        'timestamp': Timestamp.fromDate(transactionDateTime),
-        'cashbookId': cashbookId,
+        'Creation_Date': Timestamp.fromDate(transactionDateTime),
+        'CashbookID': cashbookId,
       };
 
       // Add transaction to transactions collection
       await FirebaseFirestore.instance
-          .collection('transactions')
+          // .collection('transactions')
+          // .add(transactionData);
+          .collection('Entries') //?Try this
           .add(transactionData);
 
       // Update cashbook balance
       final DocumentReference cashbookRef = FirebaseFirestore.instance
-          .collection('cashbook data')
+          // .collection('cashbook data')
+          // .doc(cashbookId);
+          .collection('Cashbooks')
           .doc(cashbookId);
 
       // Get current cashbook data
@@ -119,13 +132,14 @@ class _DepositState extends State<Deposit> {
       final currentData = cashbookDoc.data() as Map<String, dynamic>?;
 
       if (currentData != null) {
-        final double currentBalance = (currentData['balance'] ?? 0).toDouble();
+        final double currentBalance =
+            (currentData['Total_Amount'] ?? 0.0).toDouble();
         final double newBalance = currentBalance + amount;
 
         // Update the balance
         await cashbookRef.update({
-          'balance': newBalance,
-          'updatedAt': Timestamp.now(),
+          'Total_Amount': newBalance,
+          'LastTransactionDate': Timestamp.now(),
         });
       }
 
@@ -141,7 +155,12 @@ class _DepositState extends State<Deposit> {
         _resetForm();
       } else {
         if (mounted) {
-          Navigator.pop(context);
+          // Navigator.pop(context);
+          final double currentBalance =
+              (currentData?['Total_Amount'] ?? 0).toDouble();
+
+          Navigator.pop(
+              context, {'result': true, 'newBalance': currentBalance + amount});
         }
       }
     } catch (e) {

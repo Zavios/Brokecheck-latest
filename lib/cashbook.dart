@@ -11,8 +11,10 @@ class Cashbook {
   final String id;
   final String name;
   final int iconCodePoint;
-  final bool isFavorite;
-  final double balance;
+  bool isFavorite;
+  double balance;
+  double credit;
+  double debit;
   final DateTime createdAt;
 
   Cashbook({
@@ -21,19 +23,29 @@ class Cashbook {
     required this.iconCodePoint,
     this.isFavorite = false,
     this.balance = 0.0,
+    this.credit = 0.0,
+    this.debit = 0.0,
     required this.createdAt,
   });
 
   factory Cashbook.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Cashbook(
-      id: doc.id,
-      name: data['name'] ?? '',
-      iconCodePoint: data['icon'] ?? Icons.account_balance_wallet.codePoint,
-      isFavorite: data['isFavorite'] ?? false,
-      balance: (data['balance'] ?? 0.0).toDouble(),
-      createdAt: (data['created_at'] as Timestamp).toDate(),
-    );
+        // id: doc.id,
+        // name: data['name'] ?? '',
+        // iconCodePoint: data['icon'] ?? Icons.account_balance_wallet.codePoint,
+        // isFavorite: data['isFavorite'] ?? false,
+        // balance: (data['balance'] ?? 0.0).toDouble(),
+        // createdAt: (data['created_at'] as Timestamp).toDate(),
+        id: doc.id,
+        name: data['Cashbook_Name'] ?? '',
+        iconCodePoint:
+            data['Icon'] ?? Icons.account_balance_wallet.codePoint, //?Try this
+        isFavorite: data['If_Fav'] ?? false,
+        balance: (data['Total_Amount'] ?? 0.0).toDouble(),
+        createdAt: (data['Creation_Date'] as Timestamp).toDate(),
+        credit: (data['Total_Credit'] ?? 0.0),
+        debit: (data['Total_Debit'] ?? 0.0));
   }
 
   Map<String, dynamic> toMap() {
@@ -43,6 +55,8 @@ class Cashbook {
       'isFavorite': isFavorite,
       'balance': balance,
       'created_at': Timestamp.fromDate(createdAt),
+      'debit': debit,
+      'credit': credit,
     };
   }
 
@@ -53,6 +67,8 @@ class Cashbook {
     bool? isFavorite,
     double? balance,
     DateTime? createdAt,
+    double? debit,
+    double? credit,
   }) {
     return Cashbook(
       id: id ?? this.id,
@@ -61,6 +77,8 @@ class Cashbook {
       isFavorite: isFavorite ?? this.isFavorite,
       balance: balance ?? this.balance,
       createdAt: createdAt ?? this.createdAt,
+      debit: debit ?? this.debit,
+      credit: credit ?? this.credit,
     );
   }
 }
@@ -74,13 +92,20 @@ class CashbookService {
 
   // Reference to the cashbook collection
   CollectionReference get cashbooksCollection =>
-      _firestore.collection('cashbook data');
+      // _firestore.collection('cashbook data'); //TODO: Chnage collection
+      _firestore.collection('Cashbooks'); //? Try this
 
   // Get all cashbooks for current user
   Stream<List<Cashbook>> getCashbooks() {
     return cashbooksCollection
-        .where('userId', isEqualTo: currentUser?.uid)
-        .orderBy('created_at', descending: true)
+        // .where('userId', isEqualTo: currentUser?.uid)
+        // .orderBy('created_at', descending: true)
+        // .snapshots()
+        // .map((snapshot) =>
+        //     snapshot.docs.map((doc) => Cashbook.fromFirestore(doc)).toList());
+
+        .where('UserID', isEqualTo: currentUser?.uid) //?Try this
+        // .orderBy('Creation_Date', descending: true)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Cashbook.fromFirestore(doc)).toList());
@@ -89,8 +114,13 @@ class CashbookService {
   // Get favorite cashbooks for current user
   Stream<List<Cashbook>> getFavoriteCashbooks() {
     return cashbooksCollection
-        .where('userId', isEqualTo: currentUser?.uid)
-        .where('isFavorite', isEqualTo: true)
+        // .where('userId', isEqualTo: currentUser?.uid)
+        // .where('isFavorite', isEqualTo: true)
+        // .snapshots()
+        // .map((snapshot) =>
+        //     snapshot.docs.map((doc) => Cashbook.fromFirestore(doc)).toList());
+        .where('UserID', isEqualTo: currentUser?.uid) //?Try this
+        .where('If_Fav', isEqualTo: true)
         .snapshots()
         .map((snapshot) =>
             snapshot.docs.map((doc) => Cashbook.fromFirestore(doc)).toList());
@@ -102,15 +132,27 @@ class CashbookService {
     required int iconCodePoint,
     required bool isFavorite,
   }) async {
-    if (currentUser == null) return;
+    if (currentUser == null) return; //TODO: Change the place of storage
+
+    // await cashbooksCollection.add({
+    //   'name': name,
+    //   'icon': iconCodePoint,
+    //   'isFavorite': isFavorite,
+    //   'balance': 0.0,
+    //   'created_at': Timestamp.now(),
+    //   'userId': currentUser?.uid,
+    // });
 
     await cashbooksCollection.add({
-      'name': name,
-      'icon': iconCodePoint,
-      'isFavorite': isFavorite,
-      'balance': 0.0,
-      'created_at': Timestamp.now(),
-      'userId': currentUser!.uid,
+      //TODO: Make chanegs in the fetching of the cashbook
+      'Cashbook_Name': name, //?Try this
+      'Icon': iconCodePoint,
+      'If_Fav': isFavorite,
+      'Total_Amount': 0.0,
+      'Total_Debit': 0.0,
+      'Total_Credit': 0.0,
+      'Creation_Date': Timestamp.now(),
+      'UserID': currentUser?.uid,
     });
   }
 
@@ -122,7 +164,8 @@ class CashbookService {
   // Toggle favorite status
   Future<void> toggleFavorite(Cashbook cashbook) async {
     await cashbooksCollection.doc(cashbook.id).update({
-      'isFavorite': !cashbook.isFavorite,
+      // 'isFavorite': !cashbook.isFavorite,
+      'If_Fav': !cashbook.isFavorite, //?Try this
     });
   }
 
@@ -135,7 +178,8 @@ class CashbookService {
     // Update balance
     double newBalance = cashbook.balance + amount;
     await cashbooksCollection.doc(cashbookId).update({
-      'balance': newBalance,
+      // 'balance': newBalance,
+      'Total_Amount': newBalance, //?Try this
     });
   }
 

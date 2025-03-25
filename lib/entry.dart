@@ -86,7 +86,7 @@ class Entry extends StatelessWidget {
                     children: [
                       // Add a small icon to indicate transaction type
                       Icon(
-                        amount > 0 ? Icons.arrow_downward : Icons.arrow_upward,
+                        amount < 0 ? Icons.arrow_downward : Icons.arrow_upward,
                         size: 14,
                         color: which_color(amount, isDark),
                       ),

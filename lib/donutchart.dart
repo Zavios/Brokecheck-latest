@@ -1,15 +1,14 @@
-// ignore_for_file: depend_on_referenced_packages, deprecated_member_use
-
-import 'package:brokecheck/customarc.dart';
-import 'package:brokecheck/graphlabels.dart';
 import 'package:flutter/material.dart';
 import 'package:vector_math/vector_math.dart' as vector_math;
-
-import 'dart:math' show cos, sin, pi, min;
+import 'dart:math' show cos, sin, pi;
+import 'dart:ui';
+import 'customarc.dart' show CustomArc;
+import 'graphlabels.dart' show Graphlabels;
 
 class DonutChart extends StatefulWidget {
   const DonutChart({
     super.key,
+    this.radius = 120,
     this.perc1 = 10,
     this.perc2 = 40,
     this.perc3 = 25,
@@ -40,9 +39,11 @@ class DonutChart extends StatefulWidget {
     this.title4 = "Others",
     this.strokeWidth = 20,
     this.gapDegrees = 15,
+    this.balance = 0,
     this.labelStyle,
   });
 
+  final double radius;
   final int perc1;
   final int perc2;
   final int perc3;
@@ -62,6 +63,7 @@ class DonutChart extends StatefulWidget {
   final double strokeWidth;
   final double gapDegrees; // Gap between arcs in degrees
   final TextStyle? labelStyle;
+  final double balance;
 
   @override
   State<DonutChart> createState() => _DonutChartState();
@@ -70,7 +72,6 @@ class DonutChart extends StatefulWidget {
 class _DonutChartState extends State<DonutChart> {
   @override
   Widget build(BuildContext context) {
-    // Get theme properties
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
@@ -80,155 +81,121 @@ class _DonutChartState extends State<DonutChart> {
     final screenSize = MediaQuery.of(context).size;
     final isSmallScreen = screenSize.width < 360;
 
-    // Calculate responsive radius based on screen width
-    final double chartRadius = min(screenSize.width * 0.28, 120.0);
-    final double adaptiveStrokeWidth = min(widget.strokeWidth, chartRadius / 4);
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        return SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: EdgeInsets.all(chartRadius * 0.15),
-                constraints: BoxConstraints(
-                  maxWidth: constraints.maxWidth,
-                ),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    SizedBox.fromSize(
-                      size: Size.fromRadius(chartRadius),
-                      child: CustomPaint(
-                        painter: _DonutChartPainter(
-                          strokeWidth: adaptiveStrokeWidth,
-                          perc1: widget.perc1,
-                          perc2: widget.perc2,
-                          perc3: widget.perc3,
-                          perc4: widget.perc4,
-                          color1: widget.color1,
-                          color2: widget.color2,
-                          color3: widget.color3,
-                          color4: widget.color4,
-                          gapDegrees: widget.gapDegrees,
-                          labelStyle: widget.labelStyle ??
-                              textTheme.labelMedium?.copyWith(
-                                color: Colors.white,
-                                fontSize: isSmallScreen ? 12 : 16,
-                                fontWeight: FontWeight.bold,
-                              ) ??
-                              const TextStyle(
-                                color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                          isDarkMode: isDarkMode,
-                        ),
+    return Column(
+      children: [
+        Container(
+          padding: EdgeInsets.all(widget.radius * .2),
+          child: Stack(alignment: Alignment.center, children: [
+            SizedBox.fromSize(
+              size: Size.fromRadius(widget.radius),
+              child: CustomPaint(
+                painter: _DonutChartPainter(
+                  strokeWidth: widget.strokeWidth,
+                  perc1: widget.perc1,
+                  perc2: widget.perc2,
+                  perc3: widget.perc3,
+                  perc4: widget.perc4,
+                  color1: widget.color1,
+                  color2: widget.color2,
+                  color3: widget.color3,
+                  color4: widget.color4,
+                  gapDegrees: widget.gapDegrees,
+                  labelStyle: widget.labelStyle ??
+                      const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
                       ),
-                    ),
-                    GestureDetector(
-                      onTap: () {}, // Add function on click to swap the details
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 8,
-                          horizontal: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Theme.of(context).cardColor.withOpacity(0.8),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Row(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  "Spends",
-                                  style: textTheme.labelMedium?.copyWith(
-                                    fontSize: isSmallScreen ? 12 : 16,
-                                  ),
-                                ),
-                                Icon(
-                                  Icons.arrow_drop_down,
-                                  color: primaryColor,
-                                  size: isSmallScreen ? 18 : 24,
-                                ),
-                              ],
-                            ),
-                            FittedBox(
-                              fit: BoxFit.scaleDown,
-                              child: Text(
-                                "1,000,000",
-                                style: textTheme.titleLarge?.copyWith(
-                                  fontSize: isSmallScreen ? 20 : 28,
-                                ),
-                              ),
-                            )
-                          ],
-                        ),
-                      ),
-                    )
-                  ],
+                  isDarkMode: isDarkMode,
                 ),
               ),
-              const SizedBox(height: 5),
-              Text(
-                'Net Balance: 1,234',
-                style: textTheme.titleMedium?.copyWith(
-                  fontSize: isSmallScreen ? 16 : 20,
-                ),
-              ),
-              const SizedBox(height: 10),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  return GridView.count(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    crossAxisCount: constraints.maxWidth > 500 ? 4 : 2,
-                    mainAxisSpacing: 8,
-                    crossAxisSpacing: 8,
-                    childAspectRatio: isSmallScreen ? 1.3 : 1.5,
-                    padding: const EdgeInsets.symmetric(horizontal: 8),
+            ),
+            GestureDetector(
+              onTap: () {}, //TODO : Add function on click to swap the details
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Row(
+                    // mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Graphlabels(
-                        amount: 8,
-                        title: widget.title1,
-                        color: widget.color1,
-                        icon: widget.icon1,
-                        percentage: widget.perc1,
+                      Text(
+                        "Spends",
+                        style: TextStyle(fontSize: 16),
                       ),
-                      Graphlabels(
-                        color: widget.color2,
-                        amount: 8,
-                        icon: widget.icon2,
-                        title: widget.title2,
-                        percentage: widget.perc2,
-                      ),
-                      Graphlabels(
-                        amount: 9,
-                        color: widget.color3,
-                        icon: widget.icon3,
-                        title: widget.title3,
-                        percentage: widget.perc3,
-                      ),
-                      Graphlabels(
-                        percentage: widget.perc4,
-                        amount: 8,
-                        color: widget.color4,
-                        icon: widget.icon4,
-                        title: widget.title4,
-                      ),
+                      Icon(Icons.arrow_drop_down),
                     ],
-                  );
-                },
+                  ),
+                  Row(
+                    // mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        "1000000",
+                        style: TextStyle(
+                            fontSize: 28, fontWeight: FontWeight.bold),
+                      )
+                    ],
+                  )
+                ],
               ),
-            ],
-          ),
-        );
-      },
+            )
+          ]),
+        ),
+        const SizedBox(
+          height: 5,
+        ),
+        Text(
+          'Net Balance: ${widget.balance}',
+          style: TextStyle(fontSize: 20, fontWeight: FontWeight.w500),
+        ),
+        const SizedBox(
+          height: 10,
+        ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            return GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: constraints.maxWidth > 500 ? 4 : 2,
+              mainAxisSpacing: 8,
+              crossAxisSpacing: 8,
+              childAspectRatio: isSmallScreen ? 1.3 : 1.5,
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              children: [
+                Graphlabels(
+                  amount: 8,
+                  title: widget.title1,
+                  color: widget.color1,
+                  icon: widget.icon1,
+                  percentage: widget.perc1,
+                ),
+                Graphlabels(
+                  color: widget.color2,
+                  amount: 8,
+                  icon: widget.icon2,
+                  title: widget.title2,
+                  percentage: widget.perc2,
+                ),
+                Graphlabels(
+                  amount: 9,
+                  color: widget.color3,
+                  icon: widget.icon3,
+                  title: widget.title3,
+                  percentage: widget.perc3,
+                ),
+                Graphlabels(
+                  percentage: widget.perc4,
+                  amount: 8,
+                  color: widget.color4,
+                  icon: widget.icon4,
+                  title: widget.title4,
+                ),
+              ],
+            );
+          },
+        ),
+      ],
     );
   }
 }
@@ -271,8 +238,10 @@ class _DonutChartPainter extends CustomPainter {
     // Calculate gaps in radians
     final double gapRadians = vector_math.radians(gapDegrees);
 
+    List<int> percList = [perc1, perc2, perc3, perc4];
     // Calculate total gap space
-    final int numGaps = 4; // Number of gaps between segments
+    final int numGaps =
+        getNumberOfGaps(percList); // Number of gaps between segments
     final double totalGapRadians = gapRadians * numGaps;
 
     // Calculate total percentage and angles
@@ -336,17 +305,16 @@ class _DonutChartPainter extends CustomPainter {
           percetageRadian: perc4Radians),
     ];
 
-    // Responsible for creating the arcs and percentage labels
+    //Responsible for creating the arcs and percentage labels
     for (var ca in customarcs) {
-      canvas.drawArc(
-          Rect.fromCircle(center: center, radius: radius - strokeWidth / 2),
-          startAngle,
-          ca.percetageRadian,
-          false,
-          ca.paint);
+      if (ca.percetageRadian != 0 && ca.percetage != 0) {
+        canvas.drawArc(
+            Rect.fromCircle(center: center, radius: radius - strokeWidth / 2),
+            startAngle,
+            ca.percetageRadian,
+            false,
+            ca.paint);
 
-      // Only draw percentage labels if there's enough space (show for larger percentages)
-      if (ca.percetage >= 10 && radius > 40) {
         _drawPercentage(
             canvas: canvas,
             center: center,
@@ -355,9 +323,9 @@ class _DonutChartPainter extends CustomPainter {
             sweepAngle: ca.percetageRadian,
             percentage: ca.percetage,
             color: ca.color);
-      }
 
-      startAngle += ca.percetageRadian + gapRadians;
+        startAngle += ca.percetageRadian + gapRadians;
+      }
     }
   }
 
@@ -371,31 +339,23 @@ class _DonutChartPainter extends CustomPainter {
     required Color color,
   }) {
     // Skip if percentage is too small to show clearly
-    if (percentage < 10 || radius < 40) return;
+    if (percentage < 10) return;
 
     // Calculate the angle at the middle of the arc
     final double midAngle = startAngle + (sweepAngle / 2);
 
     // Position for the percentage text - outside the stroke
-    // Scale the label distance based on the radius size
-    final double labelRadius = radius * (radius < 60 ? 0.9 : 1.1);
+    final double labelRadius = radius * 1.1;
     final double x = center.dx + labelRadius * cos(midAngle);
     final double y = center.dy + labelRadius * sin(midAngle);
 
     // Percentage text
     final String displayText = '$percentage%';
 
-    // Adjust text size based on chart size
-    final double textSize =
-        radius < 60 ? labelStyle.fontSize! * 0.8 : labelStyle.fontSize!;
-
     // Create text painter
     final TextSpan span = TextSpan(
       text: displayText,
-      style: labelStyle.copyWith(
-        color: color,
-        fontSize: textSize,
-      ),
+      style: labelStyle.copyWith(color: color),
     );
 
     final TextPainter tp = TextPainter(
@@ -407,24 +367,21 @@ class _DonutChartPainter extends CustomPainter {
     // Layout the text
     tp.layout();
 
-    // Calculate background size based on text size
-    final double padding = radius < 60 ? 8 : 12;
-
     // Glassmorphic background
     final Rect textBgRect = Rect.fromCenter(
       center: Offset(x, y),
-      width: tp.width + padding,
-      height: tp.height + padding * 0.6,
+      width: tp.width + 20,
+      height: tp.height + 12,
     );
 
     // Create glassmorphic effect
     final RRect glassBg =
-        RRect.fromRectAndRadius(textBgRect, Radius.circular(padding * 0.5));
+        RRect.fromRectAndRadius(textBgRect, const Radius.circular(12));
 
     // Draw blur effect
     canvas.saveLayer(textBgRect, Paint());
 
-    // Draw background with opacity based on theme
+    // Draw white background with opacity
     canvas.drawRRect(
         glassBg,
         Paint()
@@ -453,4 +410,8 @@ class _DonutChartPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
   }
+
+  //function to get number of gaps(ignores percentages 0  and below)
+  int getNumberOfGaps(List items) => items.where((item) => item > 0).length;
 }
+//dwad

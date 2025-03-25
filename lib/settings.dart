@@ -44,6 +44,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   // Future to fetch user details
   Future<DocumentSnapshot<Map<String, dynamic>>> getUserDetails() async {
+    if (currentUser == null || currentUser!.email == null) {
+      // Return a dummy or empty document instead of null
+      return await FirebaseFirestore.instance
+          .collection("Users")
+          .doc("dummy-doc-id")
+          .get();
+    }
     return await FirebaseFirestore.instance
         .collection("Users")
         .doc(currentUser!.email)

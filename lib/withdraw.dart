@@ -107,6 +107,12 @@ class _WithdrawState extends State<Withdraw> {
     try {
       final cashbookId = widget.cashbookData!['id'];
       final currentBalance = widget.cashbookData!['balance'] ?? 0;
+      final currentDebit = widget.cashbookData!['debit'] ?? 0.0;
+      final currentCredit = widget.cashbookData!['credit'] ?? 0.0;
+      print("");
+      print(currentCredit);
+      print(currentDebit);
+      print(currentBalance);
 
       // Create a combined date/time
       final DateTime combinedDateTime = DateTime(
@@ -118,29 +124,55 @@ class _WithdrawState extends State<Withdraw> {
       );
 
       // 1. Add transaction record
-      await FirebaseFirestore.instance.collection('transactions').add({
-        'cashbookId': cashbookId,
-        'amount': -amount, // Negative for withdrawal
+
+      // await FirebaseFirestore.instance.collection('transactions').add({
+      //   'cashbookId': cashbookId,
+      //   'amount': -amount, // Negative for withdrawal
+      //   'category': categories[selectedCategoryIndex!],
+      //   'description': _descriptionController.text,
+      //   'date': Timestamp.fromDate(combinedDateTime),
+      //   'paymentMode':
+      //       selectedIndex != null ? paymentModes[selectedIndex!] : 'Cash',
+      //   'type': 'withdrawal',
+      //   'createdAt': FieldValue.serverTimestamp(),
+      // });
+
+      await FirebaseFirestore.instance.collection('Entries').add({
+        //?Try this
+        'CashbookID': cashbookId,
+        'Amount': -amount, // Negative for withdrawal
         'category': categories[selectedCategoryIndex!],
-        'description': _descriptionController.text,
+        'Description': _descriptionController.text,
         'date': Timestamp.fromDate(combinedDateTime),
         'paymentMode':
             selectedIndex != null ? paymentModes[selectedIndex!] : 'Cash',
         'type': 'withdrawal',
-        'createdAt': FieldValue.serverTimestamp(),
+        'Creation_Date': FieldValue.serverTimestamp(),
       });
-
       // 2. Update cashbook balance
+      // await FirebaseFirestore.instance
+      //     .collection('cashbook data')
+      //     .doc(cashbookId)
+      //     .update({
+      //   'balance': currentBalance - amount,
+      //   'lastTransactionDate': Timestamp.fromDate(DateTime.now()),
+      // });
+      final double newDebit = currentDebit + amount;
+      final double newBalance = currentBalance - amount;
+
       await FirebaseFirestore.instance
-          .collection('cashbook data')
+          .collection('Cashbooks')
           .doc(cashbookId)
           .update({
-        'balance': currentBalance - amount,
-        'lastTransactionDate': Timestamp.fromDate(DateTime.now()),
+        'Total_Credit': currentCredit,
+        'Total_Debit': newDebit,
+        'Total_Amount': newBalance, // Directly update with new balance
+        'LastTransactionDate': FieldValue.serverTimestamp(),
       });
 
       if (!addMore) {
-        Navigator.pop(context, true); // Return success
+        // Navigator.pop(context, true); // Return success
+        Navigator.pop(context, {'result': true, 'newBalance': newBalance});
       } else {
         // Reset form for adding more
         _amountController.clear();

@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:intl/intl.dart';
 
+import 'package:firebase_auth/firebase_auth.dart';
+
 class CashbooksSection extends StatefulWidget {
   const CashbooksSection({super.key});
 
@@ -16,6 +18,8 @@ class CashbooksSection extends StatefulWidget {
 }
 
 class _CashbooksSectionState extends State<CashbooksSection> {
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
   @override
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
@@ -24,6 +28,9 @@ class _CashbooksSectionState extends State<CashbooksSection> {
     final brightness = Theme.of(context).brightness;
     final bool isDarkMode = brightness == Brightness.dark;
     final theme = Theme.of(context);
+
+    final User? currentUser = _auth.currentUser;
+    String userid = currentUser!.uid;
 
     return Column(
       children: [
@@ -81,7 +88,11 @@ class _CashbooksSectionState extends State<CashbooksSection> {
         const SizedBox(height: 8),
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
-              .collection('cashbook data')
+              // .collection('cashbook data')
+              // .where("userId", isEqualTo: userid)
+              // .snapshots(),
+              .collection('Cashbooks') //?Try this
+              .where("UserID", isEqualTo: userid)
               .snapshots(),
           builder: (context, snapshot) {
             if (snapshot.hasData) {
@@ -186,12 +197,15 @@ class _CashbooksSectionState extends State<CashbooksSection> {
   // Add method to toggle favorite status
   Future<void> _toggleFavorite(
       String docId, Map<String, dynamic> cashbookData) async {
-    final bool currentStatus = cashbookData['isFavorite'] ?? false;
+    final bool currentStatus = cashbookData['If_Fav'] ?? false;
 
     await FirebaseFirestore.instance
-        .collection('cashbook data')
+        // .collection('cashbook data')
+        // .doc(docId)
+        // .update({'isFavorite': !currentStatus});
+        .collection('Cashbooks') //?Try this
         .doc(docId)
-        .update({'isFavorite': !currentStatus});
+        .update({'If_Fav': !currentStatus});
   }
 
   void _showFilterDialog(BuildContext context) {
@@ -337,17 +351,38 @@ class CashbookListItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // final iconData = IconData(
+    //   cashbookData['icon'] ?? Icons.account_balance_wallet.codePoint,
+    //   fontFamily: 'MaterialIcons',
+    // );
+    // final cashbookName = cashbookData['name'] ?? 'Unnamed Cashbook';
+    // final createdAt = cashbookData['created_at'];
+    // final formattedDate = createdAt != null
+    //     ? DateFormat('MMM d, yyyy').format(createdAt.toDate())
+    //     : 'N/A';
+    // final isFavorite = cashbookData['isFavorite'] ?? false;
+    // final balance = cashbookData['balance'] ?? 0;
+    // final formattedBalance = balance > 0 ? '+$balance' : '$balance';
+    // final balanceColor = balance >= 0
+    //     ? isDarkMode
+    //         ? Colors.green[300]
+    //         : const Color.fromARGB(255, 15, 94, 18) // Green for positive
+    //     : isDarkMode
+    //         ? Colors.red[300]
+    //         : Colors.red[700]; // Red for negative
+
     final iconData = IconData(
-      cashbookData['icon'] ?? Icons.account_balance_wallet.codePoint,
+      cashbookData['icon'] ??
+          Icons.account_balance_wallet.codePoint, //?Try this
       fontFamily: 'MaterialIcons',
     );
-    final cashbookName = cashbookData['name'] ?? 'Unnamed Cashbook';
-    final createdAt = cashbookData['created_at'];
+    final cashbookName = cashbookData['Cashbook_Name'] ?? 'Unnamed Cashbook';
+    final createdAt = cashbookData['Creation_Date'];
     final formattedDate = createdAt != null
         ? DateFormat('MMM d, yyyy').format(createdAt.toDate())
         : 'N/A';
-    final isFavorite = cashbookData['isFavorite'] ?? false;
-    final balance = cashbookData['balance'] ?? 0;
+    final isFavorite = cashbookData['If_Fav'] ?? false;
+    final balance = cashbookData['Total_Amount'] ?? 0.0;
     final formattedBalance = balance > 0 ? '+$balance' : '$balance';
     final balanceColor = balance >= 0
         ? isDarkMode
@@ -356,51 +391,240 @@ class CashbookListItem extends StatelessWidget {
         : isDarkMode
             ? Colors.red[300]
             : Colors.red[700]; // Red for negative
+    final debit = cashbookData['Total_Debit'] ?? 0.0;
+    final credit = cashbookData['Total_Debit'] ?? 0.0;
 
+    // return Slidable(
+    //   // Slidable actions
+    //   endActionPane: ActionPane(
+    //     motion: const ScrollMotion(),
+    //     extentRatio: 0.7, // Make the sliding area larger
+    //     children: [
+    //       // Favorite action
+    //       Flexible(
+    //         flex: 1,
+    //         child: Padding(
+    //           padding: const EdgeInsets.symmetric(horizontal: 2.0),
+    //           child: SlidableAction(
+    //             onPressed: (context) {
+    //               // Toggle favorite status
+    //               onFavoriteToggle();
+    //             },
+    //             borderRadius: BorderRadius.circular(15),
+    //             padding: EdgeInsets.zero, // Remove default padding
+    //             backgroundColor: Colors.green,
+    //             foregroundColor: Colors.white,
+    //             icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+    //             label: isFavorite ? 'Unfavorite' : 'Favorite',
+    //           ),
+    //         ),
+    //       ),
+
+    //       // Delete action
+    //       Flexible(
+    //         flex: 1,
+    //         child: Padding(
+    //           padding: const EdgeInsets.symmetric(horizontal: 4.0),
+    //           child: SlidableAction(
+    //             onPressed: (context) {
+    //               // Show delete confirmation
+    //               _showDeleteConfirmation(context);
+    //             },
+    //             borderRadius: BorderRadius.circular(15),
+    //             padding: EdgeInsets.zero, // Remove default padding
+    //             backgroundColor: AppThemes.getErrorColor(isDarkMode),
+    //             foregroundColor: Colors.white,
+    //             icon: Icons.delete,
+    //             label: 'Delete',
+    //           ),
+    //         ),
+    //       ),
+    //     ],
+    //   ),
+
+    //   child: Card(
+    //     elevation: 1.5, // Reduced elevation for a more subtle look
+    //     margin: const EdgeInsets.symmetric(vertical: 8.0),
+    //     shape: RoundedRectangleBorder(
+    //       borderRadius: BorderRadius.circular(16),
+    //       side: BorderSide(
+    //           color:
+    //               AppThemes.getSecondaryTextColor(isDarkMode).withOpacity(0.2),
+    //           width: 1), // Added border with theme color
+    //     ),
+    //     color: AppThemes.getCardColor(isDarkMode),
+    //     child: InkWell(
+    //       onTap: () {
+    //         // Navigate to cashbook details with the docId
+    //         // final cashbook = Cashbook(
+    //         //   id: docId,
+    //         //   name: cashbookData['name'] ?? 'Unnamed Cashbook',
+    //         //   balance: cashbookData['balance'] ?? 0.0,
+    //         //   isFavorite: cashbookData['isFavorite'] ?? false,
+    //         //   iconCodePoint: cashbookData['icon'] ??
+    //         //       Icons.account_balance_wallet.codePoint,
+    //         //   createdAt: cashbookData['created_at'] != null
+    //         //       ? cashbookData['created_at'].toDate()
+    //         //       : DateTime.now(),
+    //         //   // Include any other properties your Cashbook class requires
+    //         // );
+    //         final cashbook = Cashbook(
+    //           //?Try this
+    //           id: docId,
+    //           name: cashbookData['Cashbook_Name'] ?? 'Unnamed Cashbook',
+    //           balance: cashbookData['Total_Amount'] ?? 0.0,
+    //           isFavorite: cashbookData['If_Fav'] ?? false,
+    //           iconCodePoint: cashbookData['Icon'] ??
+    //               Icons.account_balance_wallet.codePoint,
+    //           createdAt: cashbookData['Creation_Date'] != null
+    // ? cashbookData['Creation_Date'].toDate()
+    //               : DateTime.now(),
+    //           // Include any other properties your Cashbook class requires
+    //         );
+
+    //         Navigator.push(
+    //           context,
+    //           MaterialPageRoute(
+    //             builder: (context) => Opendcashbook(cashbook: cashbook),
+    //           ),
+    //         );
+    //       },
+    //       borderRadius: BorderRadius.circular(16),
+    //       child: Column(
+    //         children: [
+    //           Padding(
+    //             padding: const EdgeInsets.all(16),
+    //             child: Row(
+    //               children: [
+    //                 Container(
+    //                   padding: const EdgeInsets.all(10),
+    //                   decoration: BoxDecoration(
+    //                     color: AppThemes.getPrimaryColor(isDarkMode)
+    //                         .withOpacity(0.2),
+    //                     borderRadius: BorderRadius.circular(12),
+    //                   ),
+    //                   child: Icon(iconData,
+    //                       color: AppThemes.getPrimaryColor(isDarkMode),
+    //                       size: isSmallScreen ? 24 : 32),
+    //                 ),
+    //                 const SizedBox(width: 16),
+    //                 Expanded(
+    //                   child: Column(
+    //                     crossAxisAlignment: CrossAxisAlignment.start,
+    //                     children: [
+    //                       Text(
+    //                         cashbookName,
+    //                         style: TextStyle(
+    //                           fontSize: isSmallScreen ? 14 : 16,
+    //                           fontFamily: 'poppy',
+    //                           fontWeight: FontWeight.bold,
+    //                           color: AppThemes.getTextColor(isDarkMode),
+    //                         ),
+    //                         overflow: TextOverflow.ellipsis,
+    //                         maxLines: 1,
+    //                       ),
+    //                       const SizedBox(height: 4),
+    //                       Row(
+    //                         children: [
+    //                           Icon(Icons.calendar_today,
+    //                               size: 12,
+    //                               color: AppThemes.getSecondaryTextColor(
+    //                                   isDarkMode)),
+    //                           const SizedBox(width: 4),
+    //                           Expanded(
+    //                             child: Text(
+    //                               formattedDate,
+    //                               style: TextStyle(
+    //                                 fontSize: isSmallScreen ? 12 : 14,
+    //                                 fontFamily: 'poppylight',
+    //                                 color: AppThemes.getSecondaryTextColor(
+    //                                     isDarkMode),
+    //                               ),
+    //                               overflow: TextOverflow.ellipsis,
+    //                             ),
+    //                           ),
+    //                         ],
+    //                       ),
+    //                     ],
+    //                   ),
+    //                 ),
+    //                 // Replaced heart icon with centered amount display
+    //                 Container(
+    //                   padding: const EdgeInsets.symmetric(
+    //                       horizontal: 12, vertical: 6),
+    //                   decoration: BoxDecoration(
+    //                     color: balanceColor?.withOpacity(0.1),
+    //                     borderRadius: BorderRadius.circular(12),
+    //                   ),
+    //                   child: Text(
+    //                     formattedBalance,
+    //                     style: TextStyle(
+    //                       fontSize: isSmallScreen ? 14 : 16,
+    //                       fontFamily: 'poppy',
+    //                       fontWeight: FontWeight.bold,
+    //                       color: balanceColor,
+    //                     ),
+    //                     textAlign: TextAlign.center,
+    //                   ),
+    //                 ),
+    //               ],
+    //             ),
+    //           ),
+    //           // Add a bottom divider within the card
+    //           Container(
+    //             height: 1,
+    //             color: AppThemes.getSecondaryTextColor(isDarkMode)
+    //                 .withOpacity(0.2),
+    //             margin: const EdgeInsets.symmetric(horizontal: 16),
+    //           ),
+    //         ],
+    //       ),
+    //     ),
+    //   ),
+    // );
     return Slidable(
-      // Slidable actions
+      // Slidable actions               //?Try this
       endActionPane: ActionPane(
         motion: const ScrollMotion(),
         extentRatio: 0.7, // Make the sliding area larger
         children: [
           // Favorite action
-          Flexible(
+          SizedBox(
+            width: isSmallScreen ? 4 : 8,
+          ),
+          SlidableAction(
             flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 2.0),
-              child: SlidableAction(
-                onPressed: (context) {
-                  // Toggle favorite status
-                  onFavoriteToggle();
-                },
-                borderRadius: BorderRadius.circular(15),
-                padding: EdgeInsets.zero, // Remove default padding
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-                icon: isFavorite ? Icons.favorite : Icons.favorite_border,
-                label: isFavorite ? 'Unfavorite' : 'Favorite',
-              ),
-            ),
+            onPressed: (context) {
+              // Toggle favorite status
+              onFavoriteToggle();
+            },
+            borderRadius: BorderRadius.circular(15),
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            icon: isFavorite ? Icons.favorite : Icons.favorite_border,
+            label: isFavorite ? 'Unfavorite' : 'Favorite',
+            padding: const EdgeInsets.symmetric(
+                horizontal: 2.0), // Optional for spacing
+          ),
+
+          SizedBox(
+            width: isSmallScreen ? 4 : 8,
           ),
 
           // Delete action
-          Flexible(
+          SlidableAction(
             flex: 1,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4.0),
-              child: SlidableAction(
-                onPressed: (context) {
-                  // Show delete confirmation
-                  _showDeleteConfirmation(context);
-                },
-                borderRadius: BorderRadius.circular(15),
-                padding: EdgeInsets.zero, // Remove default padding
-                backgroundColor: AppThemes.getErrorColor(isDarkMode),
-                foregroundColor: Colors.white,
-                icon: Icons.delete,
-                label: 'Delete',
-              ),
-            ),
+            onPressed: (context) {
+              // Show delete confirmation
+              _showDeleteConfirmation(context);
+            },
+            borderRadius: BorderRadius.circular(15),
+            backgroundColor: AppThemes.getErrorColor(isDarkMode),
+            foregroundColor: Colors.white,
+            icon: Icons.delete,
+            label: 'Delete',
+            padding: const EdgeInsets.symmetric(
+                horizontal: 4.0), // Optional for spacing
           ),
         ],
       ),
@@ -419,16 +643,31 @@ class CashbookListItem extends StatelessWidget {
         child: InkWell(
           onTap: () {
             // Navigate to cashbook details with the docId
+            // final cashbook = Cashbook(
+            //   id: docId,
+            //   name: cashbookData['name'] ?? 'Unnamed Cashbook',
+            //   balance: cashbookData['balance'] ?? 0.0,
+            //   isFavorite: cashbookData['isFavorite'] ?? false,
+            //   iconCodePoint: cashbookData['icon'] ??
+            //       Icons.account_balance_wallet.codePoint,
+            //   createdAt: cashbookData['created_at'] != null
+            //       ? cashbookData['created_at'].toDate()
+            //       : DateTime.now(),
+            //   // Include any other properties your Cashbook class requires
+            // );
             final cashbook = Cashbook(
+              //?Try this
               id: docId,
-              name: cashbookData['name'] ?? 'Unnamed Cashbook',
-              balance: cashbookData['balance'] ?? 0.0,
-              isFavorite: cashbookData['isFavorite'] ?? false,
-              iconCodePoint: cashbookData['icon'] ??
+              name: cashbookData['Cashbook_Name'] ?? 'Unnamed Cashbook',
+              balance: cashbookData['Total_Amount'] ?? 0.0,
+              isFavorite: cashbookData['If_Fav'] ?? false,
+              iconCodePoint: cashbookData['Icon'] ??
                   Icons.account_balance_wallet.codePoint,
-              createdAt: cashbookData['created_at'] != null
-                  ? cashbookData['created_at'].toDate()
+              createdAt: cashbookData['Creation_Date'] != null
+                  ? cashbookData['Creation_Date'].toDate()
                   : DateTime.now(),
+              debit: cashbookData['Total_Debit'] ?? 0.0,
+              credit: cashbookData['Total_Credit'] ?? 0.0,
               // Include any other properties your Cashbook class requires
             );
 
@@ -573,7 +812,10 @@ class CashbookListItem extends StatelessWidget {
             onPressed: () {
               // Delete the cashbook
               FirebaseFirestore.instance
-                  .collection('cashbook data')
+                  // .collection('cashbook data')
+                  // .doc(docId)
+                  // .delete();
+                  .collection('Cashbooks') //?Try this
                   .doc(docId)
                   .delete();
               Navigator.pop(context);

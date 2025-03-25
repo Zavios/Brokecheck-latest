@@ -2,6 +2,7 @@
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FavoritesSection extends StatelessWidget {
   const FavoritesSection({super.key});
@@ -12,6 +13,8 @@ class FavoritesSection extends StatelessWidget {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final primaryColor = Theme.of(context).primaryColor;
     final textTheme = Theme.of(context).textTheme;
+    final FirebaseAuth auth = FirebaseAuth.instance; //? Is this the correct way
+    final User? currentUser = auth.currentUser; //? Is this the correct way
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -37,8 +40,13 @@ class FavoritesSection extends StatelessWidget {
           height: 190, // Reduced height to avoid overflow
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
-                .collection('cashbook data')
-                .where('isFavorite', isEqualTo: true)
+                // .collection('cashbook data')
+                // .where('isFavorite', isEqualTo: true)
+                // .where('userId', isEqualTo: currentUser?.uid)
+                // .snapshots(),
+                .collection('Cashbooks') //?Try this
+                .where('If_Fav', isEqualTo: true)
+                .where('UserID', isEqualTo: currentUser?.uid)
                 .snapshots(),
             builder: (context, snapshot) {
               if (snapshot.connectionState == ConnectionState.waiting) {
@@ -170,11 +178,25 @@ class FavoritesSection extends StatelessWidget {
 
   Widget _buildFullScreenFavoriteCard(
       BuildContext context, Map<String, dynamic> cashbookData) {
+    // final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    // final textTheme = Theme.of(context).textTheme;
+
+    // final cashbookName = cashbookData['name'] ?? 'Unnamed Cashbook';
+    // final balance = cashbookData['balance'] ?? 0;
+    // final formattedBalance = balance > 0 ? '+$balance' : '$balance';
+    // final balanceColor = balance >= 0
+    //     ? isDarkMode
+    //         ? const Color(0xFF66BB6A)
+    //         : const Color.fromARGB(255, 15, 94, 18) // Green for positive
+    //     : isDarkMode
+    //         ? Colors.red[400]
+    //         : Colors.red[700]; // Red for negative
+
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final textTheme = Theme.of(context).textTheme;
 
-    final cashbookName = cashbookData['name'] ?? 'Unnamed Cashbook';
-    final balance = cashbookData['balance'] ?? 0;
+    final cashbookName = cashbookData['Cashbook_Name'] ?? 'Unnamed Cashbook';
+    final balance = cashbookData['Total_Amount'] ?? 0.0;
     final formattedBalance = balance > 0 ? '+$balance' : '$balance';
     final balanceColor = balance >= 0
         ? isDarkMode

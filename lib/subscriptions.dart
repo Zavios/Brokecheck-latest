@@ -49,6 +49,9 @@ class _SubscriptionsPageState extends State<SubscriptionsPage> {
   Future<void> _saveSubscriptionsToDatabase() async {
     try {
       final User? currentUser = _auth.currentUser;
+      print(currentUser?.uid);
+      print(currentUser?.email);
+      print(currentUser?.phoneNumber);
 
       if (currentUser != null) {
         final String userId = currentUser.uid;

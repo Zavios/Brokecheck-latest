@@ -28,12 +28,21 @@ class _GraphlabelsState extends State<Graphlabels> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final primaryColor = Theme.of(context).primaryColor;
+    final textTheme = Theme.of(context).textTheme;
+
+    // Use screen size for responsiveness
+    final screenSize = MediaQuery.of(context).size;
+    final isSmallScreen = screenSize.width < 360;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
       child: Container(
         height: 100,
         width: 160,
-        color: Color.fromRGBO(244, 244, 244, 1),
+        color: isDarkMode ? Colors.black : Colors.white,
         padding: EdgeInsets.all(16),
         child: Column(
           children: [
