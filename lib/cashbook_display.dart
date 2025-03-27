@@ -668,6 +668,8 @@ class CashbookListItem extends StatelessWidget {
                   : DateTime.now(),
               debit: cashbookData['Total_Debit'] ?? 0.0,
               credit: cashbookData['Total_Credit'] ?? 0.0,
+              debitCategoryMap: cashbookData['DebitCategoryMap'] ?? {},
+              creditCategoryMap: cashbookData['CreditCategoryMap'] ?? {},
               // Include any other properties your Cashbook class requires
             );
 

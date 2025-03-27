@@ -16,17 +16,20 @@ class Cashbook {
   double credit;
   double debit;
   final DateTime createdAt;
+  Map<String, dynamic> debitCategoryMap;
+  Map<String, dynamic> creditCategoryMap;
 
-  Cashbook({
-    required this.id,
-    required this.name,
-    required this.iconCodePoint,
-    this.isFavorite = false,
-    this.balance = 0.0,
-    this.credit = 0.0,
-    this.debit = 0.0,
-    required this.createdAt,
-  });
+  Cashbook(
+      {required this.id,
+      required this.name,
+      required this.iconCodePoint,
+      this.isFavorite = false,
+      this.balance = 0.0,
+      this.credit = 0.0,
+      this.debit = 0.0,
+      required this.createdAt,
+      required this.creditCategoryMap,
+      required this.debitCategoryMap});
 
   factory Cashbook.fromFirestore(DocumentSnapshot doc) {
     Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
@@ -45,7 +48,21 @@ class Cashbook {
         balance: (data['Total_Amount'] ?? 0.0).toDouble(),
         createdAt: (data['Creation_Date'] as Timestamp).toDate(),
         credit: (data['Total_Credit'] ?? 0.0),
-        debit: (data['Total_Debit'] ?? 0.0));
+        debit: (data['Total_Debit'] ?? 0.0),
+        creditCategoryMap: (data['DebitCategoryMap'] ??
+            {
+              'Transportion': 0.0,
+              'Essentials': 0.0,
+              'Food & Dining': 0.0,
+              'Others': 0.0
+            }),
+        debitCategoryMap: (data['CreditCategoryMap'] ??
+            {
+              'Transportion': 0.0,
+              'Essentials': 0.0,
+              'Food & Dining': 0.0,
+              'Others': 0.0
+            }));
   }
 
   Map<String, dynamic> toMap() {
@@ -57,6 +74,8 @@ class Cashbook {
       'created_at': Timestamp.fromDate(createdAt),
       'debit': debit,
       'credit': credit,
+      'debitCategoryMap': debitCategoryMap,
+      'creditCategoryMap': creditCategoryMap,
     };
   }
 
@@ -69,6 +88,8 @@ class Cashbook {
     DateTime? createdAt,
     double? debit,
     double? credit,
+    Map<String, dynamic>? debitCategoryMop,
+    Map<String, dynamic>? creditCategoryMop,
   }) {
     return Cashbook(
       id: id ?? this.id,
@@ -79,6 +100,8 @@ class Cashbook {
       createdAt: createdAt ?? this.createdAt,
       debit: debit ?? this.debit,
       credit: credit ?? this.credit,
+      debitCategoryMap: debitCategoryMap ?? this.debitCategoryMap,
+      creditCategoryMap: creditCategoryMap ?? this.creditCategoryMap,
     );
   }
 }
@@ -153,6 +176,18 @@ class CashbookService {
       'Total_Credit': 0.0,
       'Creation_Date': Timestamp.now(),
       'UserID': currentUser?.uid,
+      'DebitCategoryMap': {
+        'Transportion': 0.0,
+        'Essentials': 0.0,
+        'Food & Dining': 0.0,
+        'Others': 0.0
+      },
+      'CreditCategoryMap': {
+        'Transportion': 0.0,
+        'Essentials': 0.0,
+        'Food & Dining': 0.0,
+        'Others': 0.0
+      }
     });
   }
 

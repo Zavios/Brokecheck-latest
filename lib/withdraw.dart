@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use, use_build_context_synchronously
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -107,12 +108,10 @@ class _WithdrawState extends State<Withdraw> {
     try {
       final cashbookId = widget.cashbookData!['id'];
       final currentBalance = widget.cashbookData!['balance'] ?? 0;
-      final currentDebit = widget.cashbookData!['debit'] ?? 0.0;
-      final currentCredit = widget.cashbookData!['credit'] ?? 0.0;
-      print("");
-      print(currentCredit);
-      print(currentDebit);
-      print(currentBalance);
+      final currentDebit = widget.cashbookData!['debit'] ?? 0;
+      final currentCredit = widget.cashbookData!['credit'] ?? 0;
+      Map<String, dynamic> currentMap = Map<String, dynamic>.from(
+          widget.cashbookData!['debitCategoryMap'] ?? {});
 
       // Create a combined date/time
       final DateTime combinedDateTime = DateTime(
@@ -157,8 +156,11 @@ class _WithdrawState extends State<Withdraw> {
       //   'balance': currentBalance - amount,
       //   'lastTransactionDate': Timestamp.fromDate(DateTime.now()),
       // });
-      final double newDebit = currentDebit + amount;
-      final double newBalance = currentBalance - amount;
+
+      final newDebit = (currentDebit + amount);
+      final newBalance = currentBalance - amount;
+      final categoryName = categories[selectedCategoryIndex!];
+      currentMap[categoryName] = (currentMap[categoryName] ?? 0.0) + amount;
 
       await FirebaseFirestore.instance
           .collection('Cashbooks')
@@ -167,12 +169,18 @@ class _WithdrawState extends State<Withdraw> {
         'Total_Credit': currentCredit,
         'Total_Debit': newDebit,
         'Total_Amount': newBalance, // Directly update with new balance
+        'DebitCategoryMap': currentMap,
         'LastTransactionDate': FieldValue.serverTimestamp(),
       });
 
       if (!addMore) {
         // Navigator.pop(context, true); // Return success
-        Navigator.pop(context, {'result': true, 'newBalance': newBalance});
+        Navigator.pop(context, {
+          'result': true,
+          'newBalance': newBalance,
+          "newDebit": newDebit,
+          'newCategoryMap': currentMap,
+        });
       } else {
         // Reset form for adding more
         _amountController.clear();

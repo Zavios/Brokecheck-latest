@@ -84,6 +84,9 @@ class _DepositState extends State<Deposit> {
       // Get the amount as a double value
       final double amount = double.parse(amountController.text);
       final String cashbookId = widget.cashbookData!['id'] ?? '';
+      final currentBalance = widget.cashbookData!['balance'] ?? 0.0;
+      final currentDebit = widget.cashbookData!['debit'] ?? 0.0;
+      final currentCredit = widget.cashbookData!['credit'] ?? 0.0;
 
       // Create a timestamp for the transaction
       final DateTime transactionDateTime = DateTime(
@@ -130,15 +133,18 @@ class _DepositState extends State<Deposit> {
       // Get current cashbook data
       final DocumentSnapshot cashbookDoc = await cashbookRef.get();
       final currentData = cashbookDoc.data() as Map<String, dynamic>?;
+      final double newBalance = currentBalance + amount;
+      final double newCredit = currentDebit + amount;
 
       if (currentData != null) {
         final double currentBalance =
             (currentData['Total_Amount'] ?? 0.0).toDouble();
-        final double newBalance = currentBalance + amount;
 
         // Update the balance
         await cashbookRef.update({
           'Total_Amount': newBalance,
+          'Total_Credit': newCredit,
+          'Total_Debit': currentDebit,
           'LastTransactionDate': Timestamp.now(),
         });
       }
@@ -159,8 +165,11 @@ class _DepositState extends State<Deposit> {
           final double currentBalance =
               (currentData?['Total_Amount'] ?? 0).toDouble();
 
-          Navigator.pop(
-              context, {'result': true, 'newBalance': currentBalance + amount});
+          Navigator.pop(context, {
+            'result': true,
+            'newBalance': newBalance,
+            'newCredit': newCredit
+          });
         }
       }
     } catch (e) {

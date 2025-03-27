@@ -139,12 +139,16 @@ class _OpendcashbookState extends State<Opendcashbook> {
                       // Balance card
 
                       // Donut chart - adjust height based on screen size
-                      DonutChart(
-                        perc1: 10,
-                        perc2: 2,
-                        perc3: 8,
-                        perc4: 80,
-                        balance: widget.cashbook.balance,
+                      // DonutChart(
+                      //   perc1: 10,
+                      //   perc2: 2,
+                      //   perc3: 8,
+                      //   perc4: 80,
+                      //   balance: widget.cashbook.balance,
+                      // ),
+                      GestureDetector(
+                        child: getChart(widget.cashbook.debitCategoryMap,
+                            widget.cashbook.debit),
                       ),
 
                       // Transactions list
@@ -291,6 +295,7 @@ class _OpendcashbookState extends State<Opendcashbook> {
                         'balance': widget.cashbook.balance,
                         'debit': widget.cashbook.debit,
                         'credit': widget.cashbook.credit,
+                        'debitCategoryMap': widget.cashbook.debitCategoryMap,
                       };
 
                       final result = await Navigator.pushNamed(
@@ -301,6 +306,9 @@ class _OpendcashbookState extends State<Opendcashbook> {
                       if (result is Map && result['result'] == true) {
                         setState(() {
                           widget.cashbook.balance = result['newBalance'];
+                          widget.cashbook.debit = result['newDebit'];
+                          widget.cashbook.debitCategoryMap =
+                              result['newCategoryMap'];
                         });
                       }
                     },
@@ -327,6 +335,9 @@ class _OpendcashbookState extends State<Opendcashbook> {
                       Map<String, dynamic> cashbookData = {
                         'id': widget.cashbook.id,
                         'balance': widget.cashbook.balance,
+                        'debit': widget.cashbook.debit,
+                        'credit': widget.cashbook.credit,
+                        'creditCategoryMap': widget.cashbook.creditCategoryMap,
                       };
 
                       final result = await Navigator.pushNamed(
@@ -337,6 +348,7 @@ class _OpendcashbookState extends State<Opendcashbook> {
                       if (result is Map && result['result'] == true) {
                         setState(() {
                           widget.cashbook.balance = result['newBalance'];
+                          widget.cashbook.credit = result['newCredit'];
                         });
                       }
                     },
@@ -475,5 +487,109 @@ class _OpendcashbookState extends State<Opendcashbook> {
         );
       },
     );
+  }
+
+  Map<String, dynamic> transformCategoryMap(Map<String, dynamic> categoryMap) {
+    // If categoryMap is empty, return default values
+    if (categoryMap.isEmpty) {
+      return {
+        'sorted string list': ['Others'],
+        'sorted amount list': [0.0],
+        'sorted percentage list': [100]
+      };
+    }
+
+    // Sort the categoryMap by values in descending order
+    var sortedEntries = categoryMap.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
+    // Calculate total amount with safe zero handling
+    double totalAmount = sortedEntries.fold(0.0, (sum, entry) {
+      // Ensure we're using a double and handling potential null/invalid values
+      return sum + (entry.value is num ? entry.value.toDouble() : 0.0);
+    });
+
+    // Prevent division by zero
+    if (totalAmount <= 0) {
+      return {
+        'sorted string list': [
+          'Transportion',
+          'Essentials',
+          'Food & Dining',
+          'Others'
+        ],
+        'sorted amount list': [0.0, 0.0, 0.0, 0.0],
+        'sorted percentage list': [0, 0, 0, 0]
+      };
+    }
+
+    // Prepare lists for top 3 categories and others
+    List<String> sortedStringList = [];
+    List<double> sortedAmountList = [];
+    List<int> sortedPercentageList = [];
+
+    // Process top 3 categories
+    for (int i = 0; i < min(3, sortedEntries.length); i++) {
+      sortedStringList.add(sortedEntries[i].key);
+
+      // Safely convert to double
+      double entryValue = sortedEntries[i].value is num
+          ? sortedEntries[i].value.toDouble()
+          : 0.0;
+
+      sortedAmountList.add(entryValue);
+
+      // Safely calculate percentage
+      int percentage = ((entryValue / totalAmount) * 100).round();
+      sortedPercentageList.add(percentage);
+    }
+
+    // Add 'Others' category
+    if (sortedEntries.length > 3) {
+      sortedStringList.add('Others');
+
+      // Calculate the sum of remaining categories
+      double remainingAmount = sortedEntries.skip(3).fold(0.0, (sum, entry) {
+        return sum + (entry.value is num ? entry.value.toDouble() : 0.0);
+      });
+
+      sortedAmountList.add(remainingAmount);
+
+      // Calculate remaining percentage
+      int remainingPercentage =
+          100 - sortedPercentageList.reduce((a, b) => a + b);
+      sortedPercentageList.add(remainingPercentage);
+    }
+
+    // Ensure percentage list adds up to 100
+    int currentSum = sortedPercentageList.reduce((a, b) => a + b);
+    if (currentSum != 100) {
+      // Adjust the last entry to make sure total is 100%
+      sortedPercentageList[sortedPercentageList.length - 1] +=
+          (100 - currentSum);
+    }
+
+    return {
+      'sorted string list': sortedStringList,
+      'sorted amount list': sortedAmountList,
+      'sorted percentage list': sortedPercentageList
+    };
+  }
+
+// Utility function to get minimum of two numbers
+  int min(int a, int b) => a < b ? a : b;
+
+  Widget getChart(Map<String, dynamic> catMap, double debitAmount) {
+    Map<String, dynamic> formattedMap = transformCategoryMap(catMap);
+    print(catMap);
+    print(formattedMap);
+    if (formattedMap.isNotEmpty) {
+      return DonutChart(
+        labelList: formattedMap['sorted string list'],
+        amountList: formattedMap['sorted amount list'],
+        percentageList: formattedMap['sorted percentage list'],
+      );
+    }
+    return Center(child: Text("No Data Available"));
   }
 }

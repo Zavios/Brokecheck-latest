@@ -45,6 +45,7 @@ class _GraphlabelsState extends State<Graphlabels> {
         color: isDarkMode ? Colors.black : Colors.white,
         padding: EdgeInsets.all(16),
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -59,7 +60,7 @@ class _GraphlabelsState extends State<Graphlabels> {
                 )
               ],
             ),
-            const Spacer(),
+            // const Spacer(),
             Row(
               children: [
                 Container(
