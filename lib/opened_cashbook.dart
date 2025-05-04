@@ -10,8 +10,18 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Opendcashbook extends StatefulWidget {
   final Cashbook cashbook;
+  bool isDebit;
+  Map<String, dynamic> donutMap;
+  double donutAmount;
+  String donutLabel;
 
-  const Opendcashbook({super.key, required this.cashbook});
+  Opendcashbook(
+      {super.key,
+      required this.cashbook,
+      this.isDebit = true,
+      this.donutMap = const {},
+      this.donutAmount = 0,
+      this.donutLabel = "Debit"});
 
   @override
   State<Opendcashbook> createState() => _OpendcashbookState();
@@ -63,6 +73,15 @@ class _OpendcashbookState extends State<Opendcashbook> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    // Initialize with debit data
+    widget.donutMap = widget.cashbook.debitCategoryMap;
+    widget.donutAmount = widget.cashbook.debit;
+    widget.donutLabel = "Debit";
+  }
+
+  @override
   Widget build(BuildContext context) {
     // Get screen dimensions for responsive layout
     final Size screenSize = MediaQuery.of(context).size;
@@ -72,6 +91,8 @@ class _OpendcashbookState extends State<Opendcashbook> {
     final Color primaryColor = AppThemes.getPrimaryColor(isDarkMode);
     final Color secondaryTextColor =
         AppThemes.getSecondaryTextColor(isDarkMode);
+    // widget.donutMap = widget.cashbook.debitCategoryMap;
+    // widget.donutAmount = widget.cashbook.debit;
 
     return Scaffold(
       appBar: AppBar(
@@ -138,17 +159,30 @@ class _OpendcashbookState extends State<Opendcashbook> {
                     children: [
                       // Balance card
 
-                      // Donut chart - adjust height based on screen size
-                      // DonutChart(
-                      //   perc1: 10,
-                      //   perc2: 2,
-                      //   perc3: 8,
-                      //   perc4: 80,
-                      //   balance: widget.cashbook.balance,
-                      // ),
                       GestureDetector(
-                        child: getChart(widget.cashbook.debitCategoryMap,
-                            widget.cashbook.debit),
+                        onTap: () {
+                          widget.isDebit = !widget.isDebit;
+                          if (widget.isDebit == true) {
+                            setState(() {
+                              widget.donutMap =
+                                  widget.cashbook.debitCategoryMap;
+                              widget.donutAmount = widget.cashbook.debit;
+                              widget.donutLabel = "Debit";
+                            });
+                          }
+                          if (widget.isDebit == false) {
+                            setState(() {
+                              widget.donutMap =
+                                  widget.cashbook.creditCategoryMap;
+                              widget.donutAmount = widget.cashbook.credit;
+                              widget.donutLabel = "Credit";
+                            });
+                          }
+                        },
+                        // child: getChart(widget.cashbook.debitCategoryMap,
+                        //     widget.cashbook.debit),
+                        child: getChart(widget.donutMap, widget.donutAmount,
+                            widget.donutLabel),
                       ),
 
                       // Transactions list
@@ -243,8 +277,42 @@ class _OpendcashbookState extends State<Opendcashbook> {
                             );
                           }
 
+                          // if (snapshot.hasData) {}
+                          // Padding(
+                          //   padding: EdgeInsets.symmetric(
+                          //     horizontal: isSmallScreen ? 12 : 16,
+                          //     vertical: isSmallScreen ? 4 : 8,
+                          //   ),
+                          //   child: Row(
+                          //     mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          //     children: [
+                          //       Text(
+                          //         "Recent Transactions",
+                          //         style: Theme.of(context)
+                          //             .textTheme
+                          //             .titleMedium
+                          //             ?.copyWith(
+                          //               fontSize: isSmallScreen ? 14 : null,
+                          //             ),
+                          //       ),
+                          //       TextButton(
+                          //         onPressed: () {
+                          //           // Navigate to full transaction history
+                          //         },
+                          //         child: Text(
+                          //           "See All",
+                          //           style: TextStyle(
+                          //             color: primaryColor,
+                          //             fontSize: isSmallScreen ? 12 : 14,
+                          //           ),
+                          //         ),
+                          //       ),
+                          //     ],
+                          //   ),
+                          // );
                           // For demonstration, show sample entries
                           // In a real app, you'd map the snapshot.data!.docs to Entry widgets
+
                           final entries = snapshot.data!.docs;
                           return ListView.builder(
                             padding: EdgeInsets.only(
@@ -579,17 +647,25 @@ class _OpendcashbookState extends State<Opendcashbook> {
 // Utility function to get minimum of two numbers
   int min(int a, int b) => a < b ? a : b;
 
-  Widget getChart(Map<String, dynamic> catMap, double debitAmount) {
+  Widget getChart(
+      Map<String, dynamic> catMap, double debitAmount, String donutType) {
     Map<String, dynamic> formattedMap = transformCategoryMap(catMap);
     print(catMap);
     print(formattedMap);
-    if (formattedMap.isNotEmpty) {
+    if (debitAmount > 0) {
       return DonutChart(
         labelList: formattedMap['sorted string list'],
         amountList: formattedMap['sorted amount list'],
         percentageList: formattedMap['sorted percentage list'],
+        centreAmount: debitAmount,
+        centreLabel: donutType,
       );
     }
-    return Center(child: Text("No Data Available"));
+    return SizedBox(
+      child: Container(
+        color: Colors.red,
+        height: 0.0001,
+      ),
+    );
   }
 }

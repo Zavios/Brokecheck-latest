@@ -77,8 +77,9 @@ class FavoritesSection extends StatelessWidget {
               return Stack(
                 children: [
                   PageView.builder(
+                    onPageChanged: (value) {},
                     itemCount: favoriteCashbooks.length,
-                    controller: PageController(viewportFraction: 0.95),
+                    controller: PageController(viewportFraction: 1),
                     itemBuilder: (context, index) {
                       // Include document ID in the data
                       final cashbookDoc = favoriteCashbooks[index];
@@ -96,6 +97,7 @@ class FavoritesSection extends StatelessWidget {
                       );
                     },
                   ),
+
                   // Page indicator at bottom
                   Positioned(
                     bottom: 5,
